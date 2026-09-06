@@ -1,0 +1,15 @@
+{
+  "name": "huyml-portfolio-clone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An original editorial portfolio experience inspired by huyml.co",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.1.0"
+  }
+}

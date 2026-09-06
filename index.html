@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A design-led portfolio for an independent art director and digital designer." />
+    <meta name="theme-color" content="#ff4c52" />
+    <title>HUYML — Digital design & direction</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <section class="intro" aria-label="Portfolio introduction">
+        <div class="intro__light">
+          <div class="intro__wordmark">HUY<br />PHAN</div>
+          <div class="intro__line" aria-hidden="true"></div>
+        </div>
+        <div class="intro__dark"></div>
+        <div class="intro__figure" aria-hidden="true">
+          <svg class="figure" viewBox="0 0 310 430" role="img">
+            <g fill="#f7f7f4" stroke="#080808" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M127 81c-15-20-10-46 10-59 22-14 52-4 60 20 8 23-2 48-22 59z" />
+              <path d="M127 39c13-25 54-29 77-4l-3 23-16-10-10 15-23-10-16 10z" fill="#a9aaad" />
+              <path d="M187 43l33 7-22 15-22-7z" fill="#d9d9d7" />
+              <path d="M139 84c-8 17-22 28-35 40l-4 64c12 21 52 34 87 28l23-75-18-45z" fill="#7a7b7d" />
+              <path d="M116 105c-13 9-28 16-42 18l-23 23 16 12 32-19 17-11z" />
+              <path d="M156 109l39 5 31 23 31-32 12 11-32 47-23-9-26-26z" />
+              <circle cx="238" cy="106" r="12" fill="#bfc0c0" />
+              <path d="M120 184l76 2-9 90-51 9-25-43z" fill="#f4f4f0" />
+              <path d="M146 262l43 1 18 65-47 8-35-45z" />
+              <path d="M163 322l48-1 15 34-73 12-14-17z" fill="#c6c7c7" />
+              <path d="M115 235l-4 49-46 59-25-17 43-82 3-30z" fill="#f4f4f0" />
+              <path d="M65 329l24 18-26 25-45-10 22-24z" fill="#7a7b7d" />
+              <path d="M82 355l15 14-18 22-66-10-1-12z" />
+              <path d="M217 356l10 10 45 25-10 18-58-16-16-20z" />
+              <path d="M111 139l13 6M149 126l20 4M134 159l10 3" fill="none" />
+            </g>
+            <g fill="none" stroke="#fff" stroke-width="5">
+              <path d="M123 134l7 6m-13 10 7 6m21-25 7 7m-14 14 7 7m-19 15 7 7" />
+            </g>
+            <g fill="#080808" stroke="none">
+              <circle cx="171" cy="68" r="4" />
+              <path d="M157 82c9 6 19 7 27 1-5 13-20 16-27-1z" />
+              <path d="M151 54c9-7 20-9 29-4l-4 8c-9-3-17-2-25 3z" />
+            </g>
+          </svg>
+        </div>
+        <button class="intro__skip" type="button">Enter portfolio <span>↗</span></button>
+      </section>
+
+      <main class="site" aria-hidden="true">
+        <header class="topbar">
+          <a class="logo" href="#top" aria-label="HUYML home">HUYML<span>®</span></a>
+          <nav class="nav" aria-label="Main navigation">
+            <a href="#work" data-nav="work">Work</a>
+            <button type="button" data-panel="about">About</button>
+            <a href="#playground">Playground</a>
+            <button type="button" data-panel="contact">Contact</button>
+          </nav>
+          <div class="topbar__right">
+            <span class="live-dot"></span>
+            <span>Working globally</span>
+            <button class="menu-button" type="button" aria-label="Open menu" aria-expanded="false"><i></i><i></i></button>
+          </div>
+        </header>
+
+        <section class="hero" id="top">
+          <div class="hero__copy">
+            <div class="eyebrow"><span>Independent designer</span><span>HCMC — 2026</span></div>
+            <h1>Designing<br /><em>things</em> with<br />a pulse.</h1>
+            <p class="hero__intro">I’m an art director and digital designer making tactile identities, websites and visual worlds for people with something to say.</p>
+            <a class="scroll-cue" href="#work"><span>Scroll to selected work</span><b>↓</b></a>
+          </div>
+          <div class="hero__visual" id="heroVisual">
+            <div class="visual__grain"></div>
+            <div class="visual__shape visual__shape--one"></div>
+            <div class="visual__shape visual__shape--two"></div>
+            <div class="visual__shape visual__shape--three"></div>
+            <div class="visual__label">Selected work<br /><strong>01</strong><small>/19</small></div>
+            <div class="visual__project-name">Lumen<br /><span>Identity / Digital</span></div>
+            <button class="visual__next" type="button" aria-label="Next project">Next <span>↗</span></button>
+          </div>
+        </section>
+
+        <section class="work" id="work">
+          <div class="section-intro">
+            <div class="eyebrow"><span>Selected work</span><span>01 — 19</span></div>
+            <h2>A few things<br />I’ve made <em>move.</em></h2>
+            <p>Brand systems, digital experiences and the occasional beautiful experiment. Hover a project to change the world on the right.</p>
+          </div>
+          <div class="work__grid">
+            <div class="project-list" role="list"></div>
+            <aside class="work__preview" aria-label="Selected project preview">
+              <div class="preview__image"></div>
+              <div class="preview__overlay"></div>
+              <div class="preview__top"><span>Project preview</span><span class="preview__index">01 / 19</span></div>
+              <div class="preview__bottom"><strong class="preview__title">Lumen</strong><span class="preview__type">Identity / Digital</span></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="playground" id="playground">
+          <div class="eyebrow"><span>Playground</span><span>Loose thoughts</span></div>
+          <div class="playground__body">
+            <h2>Still curious<br />after all <em>this.</em></h2>
+            <div class="playground__note"><span class="note-mark">✳</span><p>Small studies in type, motion, light and the useful parts of the internet. No brief required.</p><a href="#work">Browse experiments ↗</a></div>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <div class="footer__brand">HUY<br />PHAN</div>
+          <div class="footer__cta"><span>Have a good project?</span><button type="button" data-panel="contact">Come say hi <b>↗</b></button></div>
+          <div class="footer__meta"><span>© 2026 HUYML</span><span>Built with curiosity</span></div>
+        </footer>
+      </main>
+
+      <aside class="panel" data-panel-view="about" aria-hidden="true" inert>
+        <button class="panel__close" type="button" aria-label="Close about panel">Close <span>×</span></button>
+        <div class="panel__inner"><span class="eyebrow">About / 01</span><h2>Good work<br />should feel<br /><em>alive.</em></h2><p>I’m Huy, an independent art director and digital designer working between identity, interaction and the happy accidents in between.</p><p>For the last decade I’ve helped studios, founders and curious teams turn fuzzy ideas into clear, expressive experiences.</p><a class="panel__link" href="mailto:hello@huyml.co">hello@huyml.co ↗</a></div>
+      </aside>
+      <aside class="panel" data-panel-view="contact" aria-hidden="true" inert>
+        <button class="panel__close" type="button" aria-label="Close contact panel">Close <span>×</span></button>
+        <div class="panel__inner"><span class="eyebrow">Contact / 02</span><h2>Let’s make<br />something<br /><em>memorable.</em></h2><p>Got a project, a half-formed idea or just a good question? Drop me a line. The inbox is friendly.</p><a class="panel__link" href="mailto:hello@huyml.co">hello@huyml.co ↗</a><div class="socials"><a href="https://www.behance.net" target="_blank" rel="noreferrer">Behance ↗</a><a href="https://www.instagram.com" target="_blank" rel="noreferrer">Instagram ↗</a><a href="https://www.linkedin.com" target="_blank" rel="noreferrer">LinkedIn ↗</a></div></div>
+      </aside>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
