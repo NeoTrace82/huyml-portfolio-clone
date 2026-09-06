@@ -18,6 +18,14 @@ npm run build
 npm run preview
 ```
 
+## Deployment
+
+The site is deployed as a read-only Nginx container through Portainer and Nginx Proxy Manager at:
+
+`https://testsite.digital-impressions.at`
+
+The production image is published to GHCR for `linux/amd64` and `linux/arm64`. The Portainer stack definition is in `portainer-stack.yml`; it joins the shared `proxy` network and intentionally publishes no direct host port.
+
 ## Included interactions
 
 - Animated split-screen intro with skip/enter control

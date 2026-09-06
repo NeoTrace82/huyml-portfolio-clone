@@ -1,0 +1,35 @@
+services:
+  huyml-portfolio-clone:
+    image: ghcr.io/neotrace82/huyml-portfolio-clone:latest
+    pull_policy: always
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:mode=1777
+      - /run:mode=1777
+      - /tmp:mode=1777
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      proxy:
+        aliases:
+          - huyml-portfolio-clone
+
+networks:
+  proxy:
+    external: true
