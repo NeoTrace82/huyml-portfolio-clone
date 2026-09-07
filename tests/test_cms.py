@@ -296,6 +296,30 @@ def test_horizontal_picture_uses_a_centered_square_crop(tmp_path):
         assert green > red and green > blue
 
 
+def test_existing_local_picture_is_migrated_once_to_square(tmp_path):
+    client = make_client(tmp_path)
+    project = client.get("/api/projects").json()[0]
+    source = Image.new("RGB", (600, 400), "#d9272e")
+    source.paste("#208747", (100, 0, 500, 400))
+    source.paste("#1d43a8", (500, 0, 600, 400))
+    image_path = tmp_path / "uploads" / "legacy.jpg"
+    source.save(image_path, format="JPEG", quality=95)
+    with sqlite3.connect(tmp_path / "site.db") as database:
+        database.execute("UPDATE projects SET image = '/media/legacy.jpg' WHERE id = ?", (project["id"],))
+
+    make_client(tmp_path)
+
+    with Image.open(image_path) as migrated:
+        assert migrated.size == (400, 400)
+        pixel = migrated.getpixel((200, 200))
+        assert isinstance(pixel, tuple)
+        red, green, blue = pixel
+        assert green > red and green > blue
+    first_mtime = image_path.stat().st_mtime_ns
+    make_client(tmp_path)
+    assert image_path.stat().st_mtime_ns == first_mtime
+
+
 def test_public_and_studio_previews_use_square_top_centered_framing(tmp_path):
     client = make_client(tmp_path)
     login(client)

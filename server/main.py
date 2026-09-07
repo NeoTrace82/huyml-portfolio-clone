@@ -38,6 +38,22 @@ ALLOWED_CONTENT_TYPES = {
 ALLOWED_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 
 
+def square_web_image(image: Image.Image) -> Image.Image:
+    square_edge = min(image.width, image.height)
+    left = (image.width - square_edge) // 2
+    image = image.crop((left, 0, left + square_edge, square_edge))
+    if image.mode in {"RGBA", "LA"} or (image.mode == "P" and "transparency" in image.info):
+        image = image.convert("RGBA")
+        matte = Image.new("RGB", image.size, "#f0f0ed")
+        matte.paste(image, mask=image.getchannel("A"))
+        image = matte
+    else:
+        image = image.convert("RGB")
+    if image.width > MAX_IMAGE_EDGE:
+        image = image.resize((MAX_IMAGE_EDGE, MAX_IMAGE_EDGE), Image.Resampling.LANCZOS)
+    return image
+
+
 def create_app(
     *,
     data_dir: Path | str | None = None,
@@ -124,6 +140,33 @@ def create_app(
                     ],
                 )
 
+    def normalize_existing_uploads() -> None:
+        with connection() as database:
+            image_paths = [row[0] for row in database.execute("SELECT image FROM projects WHERE image LIKE '/media/%'")]
+        for image_path in image_paths:
+            filename = Path(image_path).name
+            if image_path != f"/media/{filename}":
+                continue
+            source_path = uploads_path / filename
+            if not source_path.is_file():
+                continue
+            temporary = uploads_path / f".{filename}.square.tmp"
+            try:
+                with Image.open(source_path) as source:
+                    if source.width * source.height > MAX_IMAGE_PIXELS:
+                        continue
+                    source.load()
+                    oriented = ImageOps.exif_transpose(source)
+                    if oriented.width == oriented.height and oriented.width <= MAX_IMAGE_EDGE:
+                        continue
+                    image = square_web_image(oriented)
+                image.save(temporary, format="JPEG", quality=85, optimize=True, progressive=True)
+                os.replace(temporary, source_path)
+            except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError):
+                continue
+            finally:
+                temporary.unlink(missing_ok=True)
+
     def serialize(row: sqlite3.Row) -> dict:
         return {
             "id": row["id"],
@@ -178,19 +221,7 @@ def create_app(
                 if source.width * source.height > MAX_IMAGE_PIXELS:
                     raise HTTPException(status_code=413, detail="Image dimensions are too large")
                 source.load()
-                image = ImageOps.exif_transpose(source)
-                square_edge = min(image.width, image.height)
-                left = (image.width - square_edge) // 2
-                image = image.crop((left, 0, left + square_edge, square_edge))
-                if image.mode in {"RGBA", "LA"} or (image.mode == "P" and "transparency" in image.info):
-                    image = image.convert("RGBA")
-                    matte = Image.new("RGB", image.size, "#f0f0ed")
-                    matte.paste(image, mask=image.getchannel("A"))
-                    image = matte
-                else:
-                    image = image.convert("RGB")
-                if image.width > MAX_IMAGE_EDGE:
-                    image = image.resize((MAX_IMAGE_EDGE, MAX_IMAGE_EDGE), Image.Resampling.LANCZOS)
+                image = square_web_image(ImageOps.exif_transpose(source))
                 filename = f"project-{uuid.uuid4().hex}.jpg"
                 temporary = uploads_path / f".{filename}.tmp"
                 destination = uploads_path / filename
@@ -206,6 +237,7 @@ def create_app(
             raise HTTPException(status_code=415, detail="The selected file is not a readable image") from None
 
     init_database()
+    normalize_existing_uploads()
     app = FastAPI(title="HUYML Portfolio CMS", docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(
         SessionMiddleware,
