@@ -1,6 +1,10 @@
 .git
 .github
 node_modules
+.venv
+__pycache__
+.pytest_cache
+*.pyc
 dist
 .vite
 .DS_Store

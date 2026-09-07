@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Studio login — HUYML</title>
+  <link rel="stylesheet" href="/studio-assets/studio.css" />
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <div class="studio-kicker"><span>HUYML Studio</span><span>Private</span></div>
+    <div class="login-copy">
+      <p>Selected work editor</p>
+      <h1>Make the work<br /><em>your own.</em></h1>
+    </div>
+    <form method="post" action="/studio/login" class="login-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <label for="password">Studio password</label>
+      <div class="password-row">
+        <input id="password" name="password" type="password" required autofocus autocomplete="current-password" />
+        <button type="submit">Enter <span>↗</span></button>
+      </div>
+      {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    </form>
+    <a class="back-link" href="/">← Back to portfolio</a>
+  </main>
+</body>
+</html>

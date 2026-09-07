@@ -3,28 +3,31 @@ services:
     image: ghcr.io/neotrace82/huyml-portfolio-clone:latest
     pull_policy: always
     restart: unless-stopped
+    environment:
+      DATA_DIR: /data
+      STATIC_DIR: /app/static
+      DEFAULT_PROJECTS_PATH: /app/public/projects.json
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SESSION_SECRET: ${SESSION_SECRET}
+      COOKIE_SECURE: "1"
+    volumes:
+      - /home/debian/portainer/huyml-portfolio-clone:/data
     read_only: true
     tmpfs:
-      - /var/cache/nginx:mode=1777
-      - /run:mode=1777
       - /tmp:mode=1777
     cap_drop:
       - ALL
-    cap_add:
-      - CHOWN
-      - SETUID
-      - SETGID
     security_opt:
       - no-new-privileges:true
-    pids_limit: 128
+    pids_limit: 256
     expose:
-      - "80"
+      - "8080"
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).read()"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s
     networks:
       proxy:
         aliases:

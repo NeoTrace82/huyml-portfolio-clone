@@ -14,7 +14,7 @@ env:
 
 jobs:
   verify:
-    name: Verify application build
+    name: Verify application and CMS
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -24,14 +24,53 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: npm ci
-      - name: Build application
+      - name: Build frontend
         run: npm run build
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install CMS and test dependencies
+        run: pip install --requirement requirements.txt --requirement requirements-dev.txt
+      - name: Run CMS tests
+        run: pytest -q
+
+  security:
+    name: Trivy security gate
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.3.1
+      - name: Scan source and configuration
+        run: >-
+          trivy fs
+          --scanners vuln,secret,misconfig
+          --severity HIGH,CRITICAL
+          --ignore-unfixed
+          --exit-code 1
+          --no-progress
+          .
+      - name: Build deployment image
+        run: docker build --tag huyml-portfolio-clone:ci .
+      - name: Scan deployment image
+        run: >-
+          trivy image
+          --scanners vuln,secret,misconfig
+          --severity HIGH,CRITICAL
+          --ignore-unfixed
+          --exit-code 1
+          --no-progress
+          huyml-portfolio-clone:ci
 
   publish:
     name: Publish multi-architecture image
-    needs: verify
+    needs: [verify, security]
     runs-on: ubuntu-latest
     steps:
       - name: Check out source

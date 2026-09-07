@@ -13,45 +13,7 @@
   </head>
   <body>
     <div id="app">
-      <section class="intro" aria-label="Portfolio introduction">
-        <div class="intro__light">
-          <div class="intro__wordmark">HUY<br />PHAN</div>
-          <div class="intro__line" aria-hidden="true"></div>
-        </div>
-        <div class="intro__dark"></div>
-        <div class="intro__figure" aria-hidden="true">
-          <svg class="figure" viewBox="0 0 310 430" role="img">
-            <g fill="#f7f7f4" stroke="#080808" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M127 81c-15-20-10-46 10-59 22-14 52-4 60 20 8 23-2 48-22 59z" />
-              <path d="M127 39c13-25 54-29 77-4l-3 23-16-10-10 15-23-10-16 10z" fill="#a9aaad" />
-              <path d="M187 43l33 7-22 15-22-7z" fill="#d9d9d7" />
-              <path d="M139 84c-8 17-22 28-35 40l-4 64c12 21 52 34 87 28l23-75-18-45z" fill="#7a7b7d" />
-              <path d="M116 105c-13 9-28 16-42 18l-23 23 16 12 32-19 17-11z" />
-              <path d="M156 109l39 5 31 23 31-32 12 11-32 47-23-9-26-26z" />
-              <circle cx="238" cy="106" r="12" fill="#bfc0c0" />
-              <path d="M120 184l76 2-9 90-51 9-25-43z" fill="#f4f4f0" />
-              <path d="M146 262l43 1 18 65-47 8-35-45z" />
-              <path d="M163 322l48-1 15 34-73 12-14-17z" fill="#c6c7c7" />
-              <path d="M115 235l-4 49-46 59-25-17 43-82 3-30z" fill="#f4f4f0" />
-              <path d="M65 329l24 18-26 25-45-10 22-24z" fill="#7a7b7d" />
-              <path d="M82 355l15 14-18 22-66-10-1-12z" />
-              <path d="M217 356l10 10 45 25-10 18-58-16-16-20z" />
-              <path d="M111 139l13 6M149 126l20 4M134 159l10 3" fill="none" />
-            </g>
-            <g fill="none" stroke="#fff" stroke-width="5">
-              <path d="M123 134l7 6m-13 10 7 6m21-25 7 7m-14 14 7 7m-19 15 7 7" />
-            </g>
-            <g fill="#080808" stroke="none">
-              <circle cx="171" cy="68" r="4" />
-              <path d="M157 82c9 6 19 7 27 1-5 13-20 16-27-1z" />
-              <path d="M151 54c9-7 20-9 29-4l-4 8c-9-3-17-2-25 3z" />
-            </g>
-          </svg>
-        </div>
-        <button class="intro__skip" type="button">Enter portfolio <span>↗</span></button>
-      </section>
-
-      <main class="site" aria-hidden="true">
+      <main class="site">
         <header class="topbar">
           <a class="logo" href="#top" aria-label="HUYML home">HUYML<span>®</span></a>
           <nav class="nav" aria-label="Main navigation">
@@ -59,6 +21,7 @@
             <button type="button" data-panel="about">About</button>
             <a href="#playground">Playground</a>
             <button type="button" data-panel="contact">Contact</button>
+            <a href="/studio">Studio</a>
           </nav>
           <div class="topbar__right">
             <span class="live-dot"></span>
@@ -75,6 +38,7 @@
             <a class="scroll-cue" href="#work"><span>Scroll to selected work</span><b>↓</b></a>
           </div>
           <div class="hero__visual" id="heroVisual">
+            <div class="visual__image"></div>
             <div class="visual__grain"></div>
             <div class="visual__shape visual__shape--one"></div>
             <div class="visual__shape visual__shape--two"></div>
@@ -97,7 +61,7 @@
               <div class="preview__image"></div>
               <div class="preview__overlay"></div>
               <div class="preview__top"><span>Project preview</span><span class="preview__index">01 / 19</span></div>
-              <div class="preview__bottom"><strong class="preview__title">Lumen</strong><span class="preview__type">Identity / Digital</span></div>
+              <div class="preview__bottom"><div><strong class="preview__title">Lumen</strong><p class="preview__description">A luminous identity for a new kind of creative technology studio.</p></div><span class="preview__type">Identity / Digital</span></div>
             </aside>
           </div>
         </section>
@@ -113,7 +77,7 @@
         <footer class="footer">
           <div class="footer__brand">HUY<br />PHAN</div>
           <div class="footer__cta"><span>Have a good project?</span><button type="button" data-panel="contact">Come say hi <b>↗</b></button></div>
-          <div class="footer__meta"><span>© 2026 HUYML</span><span>Built with curiosity</span></div>
+          <div class="footer__meta"><span>© 2026 HUYML</span><a href="/studio">Edit selected work ↗</a><span>Built with curiosity</span></div>
         </footer>
       </main>
 
