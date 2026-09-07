@@ -34,11 +34,18 @@ async function formDataWithMaterializedPicture(form, fileInput) {
 forms.forEach((form) => {
   const card = form.closest('.editor-card');
   const preview = card.querySelector('.editor-preview img');
-  const previewTitle = card.querySelector('.editor-preview strong');
+  const previewTitle = card.querySelector('.editor-preview h2');
+  const titleInput = form.querySelector('[name="title"]');
   const fileInput = form.querySelector('input[type="file"]');
   const button = form.querySelector('button[type="submit"]');
   const status = form.querySelector('.save-status');
   let objectUrl = null;
+
+  titleInput.addEventListener('input', () => {
+    const title = titleInput.value.trim() || 'Untitled';
+    previewTitle.textContent = title;
+    button.setAttribute('aria-label', `Save ${title} project`);
+  });
 
   fileInput.addEventListener('change', () => {
     if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -65,7 +72,7 @@ forms.forEach((form) => {
       const project = await response.json();
       preview.src = project.image;
       previewTitle.textContent = project.title;
-      form.querySelector('[name="image_url"]').value = project.image.startsWith('/media/') ? '' : project.image;
+      button.setAttribute('aria-label', `Save ${project.title} project`);
       status.textContent = 'Saved — public site updated';
       fileInput.value = '';
       if (objectUrl) {

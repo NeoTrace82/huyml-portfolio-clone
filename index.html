@@ -38,7 +38,7 @@
             <a class="scroll-cue" href="#work"><span>Scroll to selected work</span><b>↓</b></a>
           </div>
           <div class="hero__visual" id="heroVisual">
-            <div class="visual__image"></div>
+            <img class="visual__image" alt="" aria-hidden="true" />
             <div class="visual__grain"></div>
             <div class="visual__shape visual__shape--one"></div>
             <div class="visual__shape visual__shape--two"></div>
@@ -57,11 +57,12 @@
           </div>
           <div class="work__grid">
             <div class="project-list" role="list"></div>
-            <aside class="work__preview" aria-label="Selected project preview">
-              <div class="preview__image"></div>
+            <aside class="work__preview" id="selected-project-preview" aria-label="Selected project preview">
+              <img class="preview__image" id="selected-project-image" alt="Lumen — Identity / Digital" />
               <div class="preview__overlay"></div>
               <div class="preview__top"><span>Project preview</span><span class="preview__index">01 / 19</span></div>
               <div class="preview__bottom"><div><strong class="preview__title">Lumen</strong><p class="preview__description">A luminous identity for a new kind of creative technology studio.</p></div><span class="preview__type">Identity / Digital</span></div>
+              <p class="sr-only" id="preview-announcement" aria-live="polite" aria-atomic="true"></p>
             </aside>
           </div>
         </section>

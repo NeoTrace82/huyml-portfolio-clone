@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import sqlite3
 import tempfile
 from pathlib import Path
 
@@ -65,10 +66,10 @@ def project_payload(project: dict, csrf_token: str, **updates) -> dict:
         "year": project["year"],
         "role": project["role"],
         "description": project["description"],
+        "alt_text": project["alt_text"],
         "color1": colors[0],
         "color2": colors[1],
         "color3": colors[2],
-        "image_url": project["image"],
         "csrf_token": csrf_token,
     }
     data.update(updates)
@@ -81,6 +82,7 @@ def test_public_site_has_no_enter_page_and_loads_projects(tmp_path):
     assert homepage.status_code == 200
     assert "Enter portfolio" not in homepage.text
     assert '<main class="site">' in homepage.text
+    assert '<img class="preview__image"' in homepage.text
     projects = client.get("/api/projects")
     assert projects.status_code == 200
     assert len(projects.json()) == 19
@@ -113,6 +115,7 @@ def test_text_edit_persists_and_is_public(tmp_path):
             year="2027",
             role="Direction / Digital",
             description="A saved description shown on the public selected-work preview.",
+            alt_text="Blue shapes for the edited Lumen project",
             color1="#112233",
         ),
     )
@@ -120,12 +123,70 @@ def test_text_edit_persists_and_is_public(tmp_path):
     saved = response.json()
     assert saved["title"] == "Edited Lumen"
     assert saved["description"].startswith("A saved description")
+    assert saved["alt_text"] == "Blue shapes for the edited Lumen project"
     assert saved["colors"][0] == "#112233"
 
     fresh_client = make_client(tmp_path)
     public = fresh_client.get("/api/projects").json()[0]
     assert public["title"] == "Edited Lumen"
     assert public["year"] == "2027"
+    assert public["alt_text"] == "Blue shapes for the edited Lumen project"
+
+
+def test_free_form_image_url_is_not_an_edit_path(tmp_path):
+    client = make_client(tmp_path)
+    csrf = login(client)
+    project = client.get("/api/projects").json()[0]
+
+    response = client.post(
+        f"/api/projects/{project['id']}",
+        data=project_payload(project, csrf, image_url="https://example.com/not-an-image"),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["image"] == project["image"]
+    studio = client.get("/studio")
+    assert 'name="image_url"' not in studio.text
+
+
+def test_existing_database_is_migrated_with_picture_descriptions(tmp_path):
+    database_path = tmp_path / "site.db"
+    with sqlite3.connect(database_path) as database:
+        database.execute(
+            """
+            CREATE TABLE projects (
+                id INTEGER PRIMARY KEY,
+                position INTEGER NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                year TEXT NOT NULL,
+                role TEXT NOT NULL,
+                description TEXT NOT NULL,
+                colors TEXT NOT NULL,
+                image TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        database.execute(
+            "INSERT INTO projects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (1, 1, "Legacy", "2024", "Design", "Existing work", '["#111111", "#222222", "#333333"]', "https://example.com/legacy.jpg", "2024-01-01"),
+        )
+
+    project = make_client(tmp_path).get("/api/projects").json()[0]
+
+    assert project["title"] == "Legacy"
+    assert project["alt_text"] == "Legacy — Design"
+
+
+def test_studio_forms_have_unique_accessible_project_names(tmp_path):
+    client = make_client(tmp_path)
+    login(client)
+    studio = client.get("/studio")
+
+    assert studio.status_code == 200
+    assert 'aria-labelledby="editor-project-1"' in studio.text
+    assert 'aria-label="Save Lumen project"' in studio.text
+    assert 'name="alt_text"' in studio.text
 
 
 def test_uploaded_picture_is_normalized_and_served(tmp_path):

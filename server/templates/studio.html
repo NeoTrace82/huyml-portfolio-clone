@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Selected work — HUYML Studio</title>
-  <link rel="stylesheet" href="/studio-assets/studio.css" />
+  <link rel="stylesheet" href="/studio-assets/studio.css?v=2" />
 </head>
 <body class="studio-page">
   <header class="studio-header">
     <div><span class="studio-kicker">HUYML Studio / Selected work</span><h1>Edit the work.</h1></div>
     <div class="header-actions">
       <a href="/" target="_blank" rel="noopener">Open portfolio ↗</a>
-      <form method="post" action="/studio/logout"><input type="hidden" name="csrf_token" value="{{ csrf_token }}" /><button type="submit">Log out</button></form>
+      <form method="post" action="/studio/logout" aria-label="Studio session"><input type="hidden" name="csrf_token" value="{{ csrf_token }}" /><button type="submit">Log out</button></form>
     </div>
   </header>
   <main class="studio-main">
     <p class="studio-intro">Change the title, date, role, description, colors, and picture for every selected-work item. Uploads are optimized for the web and appear on the public site immediately after saving.</p>
     <section class="project-editor-list">
       {% for project in projects %}
-      <article class="editor-card" data-project-id="{{ project.id }}">
+      <article class="editor-card" data-project-id="{{ project.id }}" aria-labelledby="editor-project-{{ project.id }}">
         <div class="editor-preview">
           <img src="{{ project.image }}" alt="Preview for {{ project.title }}" />
           <div class="preview-number">{{ "%02d"|format(loop.index) }}</div>
-          <strong>{{ project.title }}</strong>
+          <h2 id="editor-project-{{ project.id }}">{{ project.title }}</h2>
         </div>
-        <form class="project-form" enctype="multipart/form-data" action="/api/projects/{{ project.id }}" method="post">
+        <form class="project-form" enctype="multipart/form-data" action="/api/projects/{{ project.id }}" method="post" aria-labelledby="editor-project-{{ project.id }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
           <div class="field-grid">
             <label><span>Project title</span><input name="title" value="{{ project.title }}" maxlength="100" required /></label>
@@ -33,17 +33,17 @@
           </div>
           <label><span>Role / discipline</span><input name="role" value="{{ project.role }}" maxlength="100" required /></label>
           <label><span>Description</span><textarea name="description" maxlength="500" rows="3" required>{{ project.description }}</textarea></label>
+          <label><span>Picture description</span><input name="alt_text" value="{{ project.alt_text }}" maxlength="160" required /><small>Describe the image briefly for visitors using screen readers.</small></label>
           <div class="color-fields">
             {% for color in project.colors %}<label><span>Color {{ loop.index }}</span><input type="color" name="color{{ loop.index }}" value="{{ color }}" /></label>{% endfor %}
           </div>
-          <label><span>Image URL</span><input name="image_url" type="url" value="{{ project.image if not project.image.startswith('/media/') else '' }}" placeholder="https://…" /></label>
-          <label class="file-field"><span>Or upload a new picture</span><input name="image_file" type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" /><small>JPG, PNG, WebP, HEIC or HEIF · maximum 15 MB</small></label>
-          <div class="form-actions"><button type="submit">Save project <span>↗</span></button><output class="save-status" aria-live="polite"></output></div>
+          <label class="file-field"><span>Upload a new picture</span><input name="image_file" type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" /><small>JPG, PNG, WebP, HEIC or HEIF · maximum 15 MB</small></label>
+          <div class="form-actions"><button type="submit" aria-label="Save {{ project.title }} project">Save project <span>↗</span></button><output class="save-status" aria-live="polite"></output></div>
         </form>
       </article>
       {% endfor %}
     </section>
   </main>
-  <script src="/studio-assets/studio.js" defer></script>
+  <script src="/studio-assets/studio.js?v=2" defer></script>
 </body>
 </html>

@@ -11,7 +11,7 @@ The implementation does not copy the reference site's proprietary artwork, code,
 - Responsive desktop and mobile layouts
 - Password-protected `/studio` editor
 - Editable project title, year, role, description, palette, and picture
-- Image URL support plus JPG, PNG, WebP, HEIC, and HEIF uploads
+- JPG, PNG, WebP, HEIC, and HEIF picture uploads
 - macOS Finder/Photos-picker uploads are materialized before transfer for reliable browser submission
 - Uploaded images are normalized to progressive JPEG with a 2200 px maximum edge
 - SQLite project data and uploads persist under `/data`

@@ -11,7 +11,6 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -90,18 +89,23 @@ def create_app(
                     description TEXT NOT NULL,
                     colors TEXT NOT NULL,
                     image TEXT NOT NULL,
+                    alt_text TEXT NOT NULL DEFAULT '',
                     updated_at TEXT NOT NULL
                 )
                 """
             )
+            columns = {row["name"] for row in database.execute("PRAGMA table_info(projects)").fetchall()}
+            if "alt_text" not in columns:
+                database.execute("ALTER TABLE projects ADD COLUMN alt_text TEXT NOT NULL DEFAULT ''")
+            database.execute("UPDATE projects SET alt_text = title || ' — ' || role WHERE alt_text = ''")
             count = database.execute("SELECT COUNT(*) FROM projects").fetchone()[0]
             if count == 0:
                 defaults = json.loads(defaults_file.read_text(encoding="utf-8"))
                 now = datetime.now(timezone.utc).isoformat()
                 database.executemany(
                     """
-                    INSERT INTO projects (id, position, title, year, role, description, colors, image, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO projects (id, position, title, year, role, description, colors, image, alt_text, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     [
                         (
@@ -113,6 +117,7 @@ def create_app(
                             item["description"],
                             json.dumps(item["colors"]),
                             item["image"],
+                            item.get("alt_text") or f'{item["title"]} — {item["role"]}',
                             now,
                         )
                         for index, item in enumerate(defaults, start=1)
@@ -128,6 +133,7 @@ def create_app(
             "description": row["description"],
             "colors": json.loads(row["colors"]),
             "image": row["image"],
+            "alt_text": row["alt_text"],
             "updated_at": row["updated_at"],
         }
 
@@ -154,20 +160,6 @@ def create_app(
             raise HTTPException(status_code=422, detail=f"{name} is required")
         if len(cleaned) > maximum:
             raise HTTPException(status_code=422, detail=f"{name} is too long")
-        return cleaned
-
-    def validate_image_url(value: str) -> str:
-        cleaned = value.strip()
-        if not cleaned:
-            raise HTTPException(status_code=422, detail="Image URL is required when no picture is uploaded")
-        if cleaned.startswith("/media/"):
-            name = Path(cleaned.removeprefix("/media/")).name
-            if cleaned != f"/media/{name}":
-                raise HTTPException(status_code=422, detail="Invalid media path")
-            return cleaned
-        parsed = urlparse(cleaned)
-        if parsed.scheme != "https" or not parsed.netloc or len(cleaned) > 2048:
-            raise HTTPException(status_code=422, detail="Use a valid HTTPS image URL")
         return cleaned
 
     async def save_upload(upload: UploadFile) -> str:
@@ -301,10 +293,10 @@ def create_app(
         year: str = Form(),
         role: str = Form(),
         description: str = Form(),
+        alt_text: str = Form(),
         color1: str = Form(),
         color2: str = Form(),
         color3: str = Form(),
-        image_url: str = Form(default=""),
         csrf_token: str = Form(),
         image_file: UploadFile | None = File(default=None),
     ) -> JSONResponse:
@@ -314,6 +306,7 @@ def create_app(
         year = clean_text(year, "Year", 20)
         role = clean_text(role, "Role", 100)
         description = clean_text(description, "Description", 500)
+        alt_text = clean_text(alt_text, "Picture description", 160)
         colors = [color1.lower(), color2.lower(), color3.lower()]
         if any(not COLOR_RE.fullmatch(color) for color in colors):
             raise HTTPException(status_code=422, detail="Every project color must be a six-digit hex value")
@@ -324,16 +317,16 @@ def create_app(
             raise HTTPException(status_code=404, detail="Project not found")
 
         uploaded = image_file is not None
-        new_image = await save_upload(image_file) if uploaded else validate_image_url(image_url or existing["image"])
+        new_image = await save_upload(image_file) if uploaded else existing["image"]
         now = datetime.now(timezone.utc).isoformat()
         with connection() as database:
             database.execute(
                 """
                 UPDATE projects
-                SET title=?, year=?, role=?, description=?, colors=?, image=?, updated_at=?
+                SET title=?, year=?, role=?, description=?, colors=?, image=?, alt_text=?, updated_at=?
                 WHERE id=?
                 """,
-                (title, year, role, description, json.dumps(colors), new_image, now, project_id),
+                (title, year, role, description, json.dumps(colors), new_image, alt_text, now, project_id),
             )
             row = database.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
 

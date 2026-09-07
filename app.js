@@ -1,7 +1,6 @@
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
 const COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
-const FALLBACK_IMAGE = 'linear-gradient(135deg, #ff4c52, #202426)';
 let projects = [];
 let projectEls = [];
 let activeIndex = 0;
@@ -24,12 +23,6 @@ function safeColor(value, fallback) {
   return COLOR_PATTERN.test(String(value || '')) ? value : fallback;
 }
 
-function safeImageStyle(image, color) {
-  if (!image) return FALLBACK_IMAGE;
-  const safeUrl = JSON.stringify(String(image));
-  return `linear-gradient(135deg, ${color}55, transparent 62%), url(${safeUrl})`;
-}
-
 function createElement(tag, className, text) {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -41,8 +34,11 @@ function buildProject(project, index) {
   const article = createElement('article', `project${index === 0 ? ' is-active' : ''}`);
   article.dataset.index = String(index);
   article.setAttribute('role', 'listitem');
-  article.tabIndex = 0;
-  article.setAttribute('aria-label', `Open ${project.title} project`);
+  const button = createElement('button', 'project__button');
+  button.type = 'button';
+  button.setAttribute('aria-label', `Show ${project.title} project`);
+  button.setAttribute('aria-controls', 'selected-project-preview');
+  button.setAttribute('aria-pressed', String(index === 0));
 
   const identity = document.createElement('div');
   identity.append(createElement('div', 'project__title', project.title));
@@ -57,18 +53,13 @@ function buildProject(project, index) {
 
   const meta = createElement('div', 'project__meta');
   meta.append(document.createTextNode(String(index + 1).padStart(2, '0')), document.createElement('br'), document.createTextNode(project.year));
-  article.append(identity, meta, createElement('div', 'project__role', project.role), createElement('div', 'project__arrow', '↗'));
+  button.append(identity, meta, createElement('div', 'project__role', project.role), createElement('div', 'project__arrow', '↗'));
+  article.append(button);
 
   const select = () => selectProject(index);
   article.addEventListener('mouseenter', select);
-  article.addEventListener('focus', select);
-  article.addEventListener('click', select);
-  article.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      select();
-    }
-  });
+  button.addEventListener('focus', select);
+  button.addEventListener('click', select);
   return article;
 }
 
@@ -86,7 +77,11 @@ function selectProject(index) {
     safeColor(project.colors?.[1], '#d4ff4f'),
     safeColor(project.colors?.[2], '#783bcd'),
   ];
-  projectEls.forEach((element, itemIndex) => element.classList.toggle('is-active', itemIndex === activeIndex));
+  projectEls.forEach((element, itemIndex) => {
+    const selected = itemIndex === activeIndex;
+    element.classList.toggle('is-active', selected);
+    element.querySelector('.project__button').setAttribute('aria-pressed', String(selected));
+  });
   $('.preview__index').textContent = `${String(activeIndex + 1).padStart(2, '0')} / ${projects.length}`;
   $('.preview__title').textContent = project.title;
   $('.preview__type').textContent = project.role;
@@ -94,9 +89,15 @@ function selectProject(index) {
   $('.visual__label strong').textContent = String(activeIndex + 1).padStart(2, '0');
   $('.visual__label small').textContent = `/${projects.length}`;
   setProjectName($('.visual__project-name'), project);
-  const imageStyle = safeImageStyle(project.image, colors[0]);
-  $('.preview__image').style.backgroundImage = imageStyle;
-  $('.visual__image').style.backgroundImage = imageStyle;
+  const altText = String(project.alt_text || `${project.title} — ${project.role}`).trim();
+  const previewImage = $('.preview__image');
+  const heroImage = $('.visual__image');
+  previewImage.classList.remove('is-broken');
+  heroImage.classList.remove('is-broken');
+  previewImage.alt = altText;
+  previewImage.src = project.image;
+  heroImage.src = project.image;
+  $('#preview-announcement').textContent = `Selected project: ${project.title}. ${project.role}. ${project.description}`;
   $('.visual__shape--one').style.background = colors[0];
   $('.visual__shape--two').style.background = colors[1];
   $('.visual__shape--three').style.background = colors[2];
@@ -135,6 +136,10 @@ function closePanels() {
 }
 
 async function init() {
+  $$('.visual__image, .preview__image').forEach((image) => image.addEventListener('error', () => {
+    image.classList.add('is-broken');
+    image.removeAttribute('src');
+  }));
   try {
     projects = await loadProjects();
     renderProjects();
