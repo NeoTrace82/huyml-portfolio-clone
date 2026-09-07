@@ -334,6 +334,17 @@ def test_public_and_studio_previews_use_square_top_centered_framing(tmp_path):
     assert "maximum 50 MB" in studio
 
 
+def test_featured_image_motion_and_grain_are_restrained():
+    public_css = (ROOT / "styles.css").read_text(encoding="utf-8")
+
+    assert "transform: scale(1.002)" in public_css
+    assert ".hero__visual:hover .visual__image { transform: scale(1.018); }" in public_css
+    assert "baseFrequency='.60' numOctaves='2'" in public_css
+    assert ".visual__grain { position: absolute; inset: 0; opacity: .08;" in public_css
+    assert "translate(4px,-5px) rotate(2deg)" in public_css
+    assert "translate(-6px,4px) scale(1.025)" in public_css
+
+
 def test_heif_picture_without_filename_extension_is_accepted(tmp_path):
     client = make_client(tmp_path)
     csrf = login(client)
