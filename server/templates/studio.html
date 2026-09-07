@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Selected work — HUYML Studio</title>
-  <link rel="stylesheet" href="/studio-assets/studio.css?v=2" />
+  <link rel="stylesheet" href="/studio-assets/studio.css?v=3" />
 </head>
 <body class="studio-page">
   <header class="studio-header">
@@ -37,13 +37,13 @@
           <div class="color-fields">
             {% for color in project.colors %}<label><span>Color {{ loop.index }}</span><input type="color" name="color{{ loop.index }}" value="{{ color }}" /></label>{% endfor %}
           </div>
-          <label class="file-field"><span>Upload a new picture</span><input name="image_file" type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" /><small>JPG, PNG, WebP, HEIC or HEIF · maximum 15 MB</small></label>
+          <label class="file-field"><span>Upload a new picture</span><input name="image_file" type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" /><small>JPG, PNG, WebP, HEIC or HEIF · maximum 50 MB · saved as a top-centered 1:1 square</small></label>
           <div class="form-actions"><button type="submit" aria-label="Save {{ project.title }} project">Save project <span>↗</span></button><output class="save-status" aria-live="polite"></output></div>
         </form>
       </article>
       {% endfor %}
     </section>
   </main>
-  <script src="/studio-assets/studio.js?v=2" defer></script>
+  <script src="/studio-assets/studio.js?v=3" defer></script>
 </body>
 </html>

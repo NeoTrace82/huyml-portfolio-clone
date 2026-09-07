@@ -1,4 +1,5 @@
 const forms = [...document.querySelectorAll('.project-form')];
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 function detailFromResponse(response, fallback) {
   return response.json().then((body) => body.detail || fallback).catch(() => fallback);
@@ -40,6 +41,7 @@ forms.forEach((form) => {
   const button = form.querySelector('button[type="submit"]');
   const status = form.querySelector('.save-status');
   let objectUrl = null;
+  let savedImage = preview.getAttribute('src');
 
   titleInput.addEventListener('input', () => {
     const title = titleInput.value.trim() || 'Untitled';
@@ -49,8 +51,21 @@ forms.forEach((form) => {
 
   fileInput.addEventListener('change', () => {
     if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = null;
     const file = fileInput.files[0];
-    if (!file) return;
+    if (!file) {
+      preview.src = savedImage;
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      fileInput.value = '';
+      preview.src = savedImage;
+      status.textContent = 'Pictures must be 50 MB or smaller.';
+      status.classList.add('is-error');
+      return;
+    }
+    status.textContent = 'Preview uses the top-centered square crop.';
+    status.classList.remove('is-error');
     objectUrl = URL.createObjectURL(file);
     preview.src = objectUrl;
   });
@@ -71,6 +86,7 @@ forms.forEach((form) => {
       if (!response.ok) throw new Error(await detailFromResponse(response, `Save failed (${response.status})`));
       const project = await response.json();
       preview.src = project.image;
+      savedImage = project.image;
       previewTitle.textContent = project.title;
       button.setAttribute('aria-label', `Save ${project.title} project`);
       status.textContent = 'Saved — public site updated';

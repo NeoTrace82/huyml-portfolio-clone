@@ -16,7 +16,7 @@ os.environ["COOKIE_SECURE"] = "0"
 
 from fastapi.testclient import TestClient
 
-from server.main import create_app
+from server.main import MAX_IMAGE_EDGE, MAX_UPLOAD_BYTES, create_app
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -211,11 +211,103 @@ def test_uploaded_picture_is_normalized_and_served(tmp_path):
     assert stored.exists()
     with Image.open(stored) as image:
         assert image.format == "JPEG"
-        assert max(image.size) == 2200
+        assert image.size == (1800, 1800)
         assert image.mode == "RGB"
     served = client.get(image_url)
     assert served.status_code == 200
     assert served.headers["content-type"] == "image/jpeg"
+
+
+def test_upload_limit_and_square_output_size_are_configured_for_portfolio_photos():
+    assert MAX_UPLOAD_BYTES == 50 * 1024 * 1024
+    assert MAX_IMAGE_EDGE == 1800
+
+
+def test_valid_picture_larger_than_previous_15_mb_limit_is_accepted(tmp_path):
+    client = make_client(tmp_path)
+    csrf = login(client)
+    project = client.get("/api/projects").json()[0]
+    source = Image.frombytes("RGB", (2500, 2200), os.urandom(2500 * 2200 * 3))
+    payload = io.BytesIO()
+    source.save(payload, format="PNG")
+    upload = payload.getvalue()
+    assert 15 * 1024 * 1024 < len(upload) < MAX_UPLOAD_BYTES
+
+    response = client.post(
+        f"/api/projects/{project['id']}",
+        data=project_payload(project, csrf),
+        files={"image_file": ("large-photo.png", upload, "image/png")},
+    )
+
+    assert response.status_code == 200
+    stored = tmp_path / "uploads" / Path(response.json()["image"]).name
+    with Image.open(stored) as image:
+        assert image.size == (1800, 1800)
+
+
+def test_vertical_picture_keeps_the_top_square(tmp_path):
+    client = make_client(tmp_path)
+    csrf = login(client)
+    project = client.get("/api/projects").json()[0]
+    source = Image.new("RGB", (400, 600), "#d9272e")
+    source.paste("#1d43a8", (0, 400, 400, 600))
+    payload = io.BytesIO()
+    source.save(payload, format="PNG")
+
+    response = client.post(
+        f"/api/projects/{project['id']}",
+        data=project_payload(project, csrf),
+        files={"image_file": ("vertical.png", payload.getvalue(), "image/png")},
+    )
+
+    assert response.status_code == 200
+    stored = tmp_path / "uploads" / Path(response.json()["image"]).name
+    with Image.open(stored) as image:
+        assert image.size == (400, 400)
+        pixel = image.getpixel((200, 390))
+        assert isinstance(pixel, tuple)
+        red, green, blue = pixel
+        assert red > 150 and blue < 100
+
+
+def test_horizontal_picture_uses_a_centered_square_crop(tmp_path):
+    client = make_client(tmp_path)
+    csrf = login(client)
+    project = client.get("/api/projects").json()[0]
+    source = Image.new("RGB", (600, 400), "#d9272e")
+    source.paste("#208747", (100, 0, 500, 400))
+    source.paste("#1d43a8", (500, 0, 600, 400))
+    payload = io.BytesIO()
+    source.save(payload, format="PNG")
+
+    response = client.post(
+        f"/api/projects/{project['id']}",
+        data=project_payload(project, csrf),
+        files={"image_file": ("horizontal.png", payload.getvalue(), "image/png")},
+    )
+
+    assert response.status_code == 200
+    stored = tmp_path / "uploads" / Path(response.json()["image"]).name
+    with Image.open(stored) as image:
+        assert image.size == (400, 400)
+        pixel = image.getpixel((200, 200))
+        assert isinstance(pixel, tuple)
+        red, green, blue = pixel
+        assert green > red and green > blue
+
+
+def test_public_and_studio_previews_use_square_top_centered_framing(tmp_path):
+    client = make_client(tmp_path)
+    login(client)
+    public_css = (ROOT / "styles.css").read_text(encoding="utf-8")
+    studio_css = client.get("/studio-assets/studio.css").text
+    studio = client.get("/studio").text
+
+    assert "aspect-ratio: 1 / 1" in public_css
+    assert "object-position: center top" in public_css
+    assert "aspect-ratio:1/1" in studio_css
+    assert "object-position:center top" in studio_css
+    assert "maximum 50 MB" in studio
 
 
 def test_heif_picture_without_filename_extension_is_accepted(tmp_path):

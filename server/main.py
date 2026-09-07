@@ -21,13 +21,13 @@ from pillow_heif import register_heif_opener
 from starlette.middleware.sessions import SessionMiddleware
 
 register_heif_opener()
-MAX_IMAGE_PIXELS = 40_000_000
+MAX_IMAGE_PIXELS = 100_000_000
 Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
 
 ROOT = Path(__file__).resolve().parent
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
-MAX_UPLOAD_BYTES = 15 * 1024 * 1024
-MAX_IMAGE_EDGE = 2200
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+MAX_IMAGE_EDGE = 1800
 ALLOWED_CONTENT_TYPES = {
     "image/jpeg",
     "image/png",
@@ -172,13 +172,16 @@ def create_app(
         if not payload:
             raise HTTPException(status_code=415, detail="The selected image is empty")
         if len(payload) > MAX_UPLOAD_BYTES:
-            raise HTTPException(status_code=413, detail="Images must be 15 MB or smaller")
+            raise HTTPException(status_code=413, detail="Images must be 50 MB or smaller")
         try:
             with Image.open(io.BytesIO(payload)) as source:
                 if source.width * source.height > MAX_IMAGE_PIXELS:
                     raise HTTPException(status_code=413, detail="Image dimensions are too large")
                 source.load()
                 image = ImageOps.exif_transpose(source)
+                square_edge = min(image.width, image.height)
+                left = (image.width - square_edge) // 2
+                image = image.crop((left, 0, left + square_edge, square_edge))
                 if image.mode in {"RGBA", "LA"} or (image.mode == "P" and "transparency" in image.info):
                     image = image.convert("RGBA")
                     matte = Image.new("RGB", image.size, "#f0f0ed")
@@ -186,7 +189,8 @@ def create_app(
                     image = matte
                 else:
                     image = image.convert("RGB")
-                image.thumbnail((MAX_IMAGE_EDGE, MAX_IMAGE_EDGE), Image.Resampling.LANCZOS)
+                if image.width > MAX_IMAGE_EDGE:
+                    image = image.resize((MAX_IMAGE_EDGE, MAX_IMAGE_EDGE), Image.Resampling.LANCZOS)
                 filename = f"project-{uuid.uuid4().hex}.jpg"
                 temporary = uploads_path / f".{filename}.tmp"
                 destination = uploads_path / filename

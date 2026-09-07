@@ -13,7 +13,7 @@ The implementation does not copy the reference site's proprietary artwork, code,
 - Editable project title, year, role, description, palette, and picture
 - JPG, PNG, WebP, HEIC, and HEIF picture uploads
 - macOS Finder/Photos-picker uploads are materialized before transfer for reliable browser submission
-- Uploaded images are normalized to progressive JPEG with a 2200 px maximum edge
+- Uploads up to 50 MB are cropped from the top-center to 1:1 and saved as progressive JPEG at up to 1800 × 1800 px
 - SQLite project data and uploads persist under `/data`
 - CSRF-protected writes, secure sessions, security headers, and non-root container runtime
 

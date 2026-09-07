@@ -42,8 +42,8 @@ h1 em, h2 em { font-style: italic; color: var(--coral); }
 .hero__intro { max-width: 250px; margin: 31px 0 0; font-size: 14px; line-height: 1.4; }
 .scroll-cue { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 36px; font: 10px var(--mono); text-transform: uppercase; border-bottom: 1px solid var(--ink); padding-bottom: 9px; }
 .scroll-cue b { font: 18px/10px var(--sans); font-weight: 400; }
-.hero__visual { position: relative; min-height: 530px; overflow: hidden; background: #202426; color: white; isolation: isolate; }
-.visual__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.01); transition: transform .9s cubic-bezier(.22,.61,.36,1); }
+.hero__visual { position: relative; width: 100%; min-height: 0; aspect-ratio: 1 / 1; align-self: start; overflow: hidden; background: #202426; color: white; isolation: isolate; }
+.visual__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; transform: scale(1.01); transition: transform .9s cubic-bezier(.22,.61,.36,1); }
 .visual__image.is-broken, .preview__image.is-broken { background: linear-gradient(135deg, #ff4c52, #202426); }
 .hero__visual:hover .visual__image { transform: scale(1.045); }
 .visual__grain { position: absolute; inset: 0; opacity: .23; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E"); mix-blend-mode: screen; z-index: 3; pointer-events: none; }
@@ -78,8 +78,8 @@ h1 em, h2 em { font-style: italic; color: var(--coral); }
 .project__arrow { justify-self: end; font-size: 16px; }
 .swatches { display: flex; gap: 4px; margin-top: 7px; }
 .swatches i { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--swatch); }
-.work__preview { position: sticky; top: 0; height: min(56vw, 690px); min-height: 450px; overflow: hidden; background: #31363a; color: white; }
-.preview__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s ease; }
+.work__preview { position: sticky; top: 0; height: auto; min-height: 0; aspect-ratio: 1 / 1; overflow: hidden; background: #31363a; color: white; }
+.preview__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform .8s ease; }
 .work__preview:hover .preview__image { transform: scale(1.035); }
 .preview__overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.42), transparent 30%, transparent 58%, rgba(0,0,0,.65)); }
 .preview__top, .preview__bottom { position: absolute; left: 20px; right: 20px; z-index: 1; display: flex; justify-content: space-between; align-items: center; font: 10px var(--mono); text-transform: uppercase; }
@@ -125,13 +125,13 @@ h1 em, h2 em { font-style: italic; color: var(--coral); }
   .menu-button { display: block; }
   .hero { display: flex; flex-direction: column; min-height: auto; }
   .hero__copy { min-height: 72svh; padding: 20px 16px 18px; }
-  .hero__visual { min-height: 83svh; }
+  .hero__visual { min-height: 0; aspect-ratio: 1 / 1; }
   .section-intro { display: block; margin-bottom: 35px; }
   .section-intro h2 { margin: 56px 0 23px; }
   .section-intro p { max-width: 300px; }
   .work { padding: 20px 16px 55px; }
   .work__grid { display: flex; flex-direction: column-reverse; }
-  .work__preview { position: sticky; z-index: 2; top: 0; height: clamp(360px, 92vw, 460px); min-height: 360px; align-self: stretch; }
+  .work__preview { position: sticky; z-index: 2; top: 0; height: auto; min-height: 0; aspect-ratio: 1 / 1; align-self: stretch; }
   .project__button { grid-template-columns: minmax(0,1fr) minmax(0,100px) 22px; gap: 8px; min-height: 78px; }
   .project__meta { display: none; }
   .project__role { text-align: right; }
