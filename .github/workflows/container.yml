@@ -57,7 +57,7 @@ jobs:
           --no-progress
           .
       - name: Build deployment image
-        run: docker build --tag huyml-portfolio-clone:ci .
+        run: docker build --pull --no-cache --tag huyml-portfolio-clone:ci .
       - name: Scan deployment image
         run: >-
           trivy image
@@ -98,6 +98,8 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
+          pull: true
+          no-cache: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

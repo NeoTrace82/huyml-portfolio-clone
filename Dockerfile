@@ -6,7 +6,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM python:3.12-slim
+FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -16,11 +16,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     HOME=/tmp
 
 WORKDIR /app
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd --gid 10001 appuser \
-    && useradd --uid 10001 --gid 10001 --no-create-home --home-dir /tmp appuser
+RUN apk upgrade --no-cache \
+    && addgroup -S -g 10001 appuser \
+    && adduser -S -D -H -u 10001 -G appuser -h /tmp appuser
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --requirement requirements.txt
 COPY server ./server
