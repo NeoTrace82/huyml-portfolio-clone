@@ -7,7 +7,9 @@ from unittest.mock import patch
 
 import pytest
 
-root = tempfile.mkdtemp(prefix="huyml-offline-", dir=os.environ.get("TMPDIR", str(Path.home() / ".hermes/cache/scratch")))
+scratch = Path(os.environ.get("TMPDIR", str(Path.home() / ".hermes/cache/scratch")))
+scratch.mkdir(parents=True, exist_ok=True)
+root = tempfile.mkdtemp(prefix="huyml-offline-", dir=scratch)
 path = os.environ.get("PATH", "/usr/bin:/bin")
 os.environ.clear()
 os.environ.update(PATH=path, HOME=root, TMPDIR=root, DATA_DIR=root,
