@@ -42,8 +42,23 @@ COOKIE_SECURE=0 \
 Run the tests with:
 
 ```bash
+npm ci && npm run build # Required: CMS tests serve dist/.
 .venv/bin/pytest -q
 ```
+
+## Studio sessions
+
+Studio sessions expire **12 hours after login**, without sliding renewal on use.
+Logout revokes the session server-side, so copied cookies cannot log back in.
+Legacy signed authentication cookies are rejected; sign in again after upgrading.
+Opaque random session tokens are stored only as hashes in `/data/studio-sessions.db`.
+Keep this private ledger durable alongside `site.db`. Unchanged configuration
+preserves valid sessions across restarts. Observed `ADMIN_PASSWORD` or
+`SESSION_SECRET` changes durably revoke all sessions, including after reversion
+to an old value. All workers must share the ledger and identical configuration;
+mixed configuration revokes sessions rather than accepting both credentials.
+Changes never loaded by an app instance cannot be detected. The existing signed
+session cookie continues to hold CSRF state, not an authentication boolean.
 
 ## Deployment
 

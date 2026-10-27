@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 from PIL import Image, ImageOps, UnidentifiedImageError
 from pillow_heif import register_heif_opener
 from starlette.middleware.sessions import SessionMiddleware
+from .security import SessionLedger
 
 register_heif_opener()
 MAX_IMAGE_PIXELS = 100_000_000
@@ -78,6 +79,9 @@ def create_app(
     data_path.mkdir(parents=True, exist_ok=True)
     uploads_path.mkdir(parents=True, exist_ok=True)
     database_path = data_path / "site.db"
+    auth_cookie = "huyml_studio_session"
+    auth_max_age = 60 * 60 * 12
+    auth_sessions = SessionLedger(data_path / "studio-sessions.db", password, secret, auth_max_age)
     templates = Jinja2Templates(directory=str(ROOT / "templates"))
 
     @contextmanager
@@ -186,7 +190,7 @@ def create_app(
         return [serialize(row) for row in rows]
 
     def authenticated(request: Request) -> bool:
-        return request.session.get("studio_authenticated") is True
+        return auth_sessions.valid(request.cookies.get(auth_cookie))
 
     def require_auth(request: Request) -> None:
         if not authenticated(request):
@@ -290,7 +294,8 @@ def create_app(
         expected = request.session.get("login_csrf", "")
         if not expected or not hmac.compare_digest(expected, csrf_token):
             raise HTTPException(status_code=403, detail="Invalid CSRF token")
-        if not hmac.compare_digest(password, password_value):
+        auth_token = auth_sessions.issue(password_value)
+        if auth_token is None:
             token = secrets.token_urlsafe(32)
             request.session["login_csrf"] = token
             return templates.TemplateResponse(
@@ -299,15 +304,19 @@ def create_app(
                 context={"request": request, "csrf_token": token, "error": "That password is not correct."},
                 status_code=401,
             )
+        auth_sessions.revoke(request.cookies.get(auth_cookie))
         request.session.clear()
-        request.session["studio_authenticated"] = True
         request.session["csrf_token"] = secrets.token_urlsafe(32)
-        return RedirectResponse("/studio", status_code=303)
+        response = RedirectResponse("/studio", status_code=303)
+        response.set_cookie(auth_cookie, auth_token, max_age=auth_max_age, secure=cookie_secure,
+                            httponly=True, samesite="lax")
+        return response
 
     @app.get("/studio", response_class=HTMLResponse)
     def studio(request: Request):
         if not authenticated(request):
             return RedirectResponse("/studio/login", status_code=303)
+        request.session.setdefault("csrf_token", secrets.token_urlsafe(32))
         return templates.TemplateResponse(
             request=request,
             name="studio.html",
@@ -318,8 +327,11 @@ def create_app(
     def studio_logout(request: Request, csrf_token: str = Form()):
         require_auth(request)
         require_csrf(request, csrf_token)
+        auth_sessions.revoke(request.cookies.get(auth_cookie))
         request.session.clear()
-        return RedirectResponse("/studio/login", status_code=303)
+        response = RedirectResponse("/studio/login", status_code=303)
+        response.delete_cookie(auth_cookie, secure=cookie_secure, httponly=True, samesite="lax")
+        return response
 
     @app.post("/api/projects/{project_id}")
     async def update_project(
