@@ -1,0 +1,30 @@
+{% extends "studio_base.html" %}
+{% block title %}Contact — HUYML Studio{% endblock %}
+{% block kicker %}HUYML Studio / Contact{% endblock %}
+{% block heading %}Edit the invitation.{% endblock %}
+{% block body_class %}studio-settings-page{% endblock %}
+{% block content %}
+  <p class="studio-intro">Update the Contact panel and the social destinations shown to visitors. Social links can be left empty to hide them.</p>
+  <section class="settings-layout">
+    <div class="settings-preview settings-preview--contact" aria-label="Current Contact preview">
+      <span class="preview-kicker">Contact / Preview</span>
+      <h2><span>{{ settings.contact_heading }}</span><em>{{ settings.contact_accent }}</em></h2>
+      <div class="settings-preview-copy"><p>{{ settings.contact_intro }}</p></div>
+      <span class="preview-link">{{ settings.contact_email }} ↗</span>
+    </div>
+    <form class="settings-form" method="post" action="/studio/contact" aria-label="Edit Contact page">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      {% if saved %}<p class="form-notice is-success" role="status">Contact page saved. The public portfolio is updated.</p>{% endif %}
+      {% if error %}<p class="form-notice is-error" role="alert">{{ error }}</p>{% endif %}
+      <label><span>Main heading</span><textarea name="contact_heading" maxlength="120" rows="2" required>{{ settings.contact_heading }}</textarea><small>Use a line break where the heading should wrap.</small></label>
+      <label><span>Highlighted line</span><input name="contact_accent" value="{{ settings.contact_accent }}" maxlength="60" required /></label>
+      <label><span>Invitation text</span><textarea name="contact_intro" maxlength="800" rows="5" required>{{ settings.contact_intro }}</textarea></label>
+      <label><span>Contact email</span><input name="contact_email" type="email" value="{{ settings.contact_email }}" maxlength="254" required /></label>
+      <div class="settings-group"><span>Social links</span><p>HTTPS links only. Leave a field empty to hide that platform.</p></div>
+      <label><span>Behance URL</span><input name="behance_url" type="url" value="{{ settings.behance_url }}" maxlength="2048" placeholder="https://behance.net/…" /></label>
+      <label><span>Instagram URL</span><input name="instagram_url" type="url" value="{{ settings.instagram_url }}" maxlength="2048" placeholder="https://instagram.com/…" /></label>
+      <label><span>LinkedIn URL</span><input name="linkedin_url" type="url" value="{{ settings.linkedin_url }}" maxlength="2048" placeholder="https://linkedin.com/in/…" /></label>
+      <button class="settings-save" type="submit">Save Contact page <span>↗</span></button>
+    </form>
+  </section>
+{% endblock %}

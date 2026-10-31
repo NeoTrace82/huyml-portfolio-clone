@@ -76,6 +76,26 @@ def project_payload(project: dict, csrf_token: str, **updates) -> dict:
     return data
 
 
+def settings_payload(csrf_token: str, **updates) -> dict:
+    data = {
+        "about_heading": "Good work\nshould feel",
+        "about_accent": "alive.",
+        "about_intro": "I’m Huy, an independent art director and digital designer.",
+        "about_details": "For the last decade I’ve helped curious teams make expressive experiences.",
+        "about_email": "hello@huyml.co",
+        "contact_heading": "Let’s make\nsomething",
+        "contact_accent": "memorable.",
+        "contact_intro": "Got a project or a good question? Drop me a line.",
+        "contact_email": "hello@huyml.co",
+        "behance_url": "https://www.behance.net",
+        "instagram_url": "https://www.instagram.com",
+        "linkedin_url": "https://www.linkedin.com",
+        "csrf_token": csrf_token,
+    }
+    data.update(updates)
+    return data
+
+
 def test_public_site_has_no_enter_page_and_loads_projects(tmp_path):
     client = make_client(tmp_path)
     homepage = client.get("/")
@@ -145,7 +165,7 @@ def test_free_form_image_url_is_not_an_edit_path(tmp_path):
 
     assert response.status_code == 200
     assert response.json()["image"] == project["image"]
-    studio = client.get("/studio")
+    studio = client.get("/studio/work")
     assert 'name="image_url"' not in studio.text
 
 
@@ -181,12 +201,149 @@ def test_existing_database_is_migrated_with_picture_descriptions(tmp_path):
 def test_studio_forms_have_unique_accessible_project_names(tmp_path):
     client = make_client(tmp_path)
     login(client)
-    studio = client.get("/studio")
+    studio = client.get("/studio/work")
 
     assert studio.status_code == 200
     assert 'aria-labelledby="editor-project-1"' in studio.text
     assert 'aria-label="Save Lumen project"' in studio.text
     assert 'name="alt_text"' in studio.text
+
+
+def test_studio_home_links_to_simple_configuration_subpages(tmp_path):
+    client = make_client(tmp_path)
+    login(client)
+
+    dashboard = client.get("/studio")
+    work = client.get("/studio/work")
+
+    assert dashboard.status_code == 200
+    assert "Choose what to edit" in dashboard.text
+    assert 'href="/studio/work"' in dashboard.text
+    assert 'href="/studio/about"' in dashboard.text
+    assert 'href="/studio/contact"' in dashboard.text
+    assert dashboard.text.count('class="studio-choice ') == 3
+    assert 'class="project-form"' not in dashboard.text
+    assert work.status_code == 200
+    assert work.text.count('class="project-form"') == 19
+
+
+def test_all_studio_subpages_require_login(tmp_path):
+    client = make_client(tmp_path)
+
+    for path in ("/studio/work", "/studio/about", "/studio/contact"):
+        response = client.get(path, follow_redirects=False)
+        assert response.status_code == 303
+        assert response.headers["location"] == "/studio/login"
+
+
+def test_about_page_settings_persist_and_are_public(tmp_path):
+    client = make_client(tmp_path)
+    csrf = login(client)
+    response = client.post(
+        "/studio/about",
+        data=settings_payload(
+            csrf,
+            about_heading="Portraits\nwith purpose",
+            about_accent="and warmth.",
+            about_intro="First line\nSecond line",
+            about_details="A safe <script>alert(1)</script> biography.",
+            about_email="studio@example.com",
+        ),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/studio/about?saved=1"
+    public = client.get("/api/site-settings")
+    assert public.status_code == 200
+    assert public.headers["cache-control"] == "no-store"
+    assert public.json()["about_heading"] == "Portraits\nwith purpose"
+    assert public.json()["about_email"] == "studio@example.com"
+
+    fresh = make_client(tmp_path)
+    assert fresh.get("/studio/about", follow_redirects=False).status_code == 303
+    login(fresh)
+    editor = fresh.get("/studio/about")
+    assert "Portraits\nwith purpose" in editor.text
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in editor.text
+    assert "<script>alert(1)</script>" not in editor.text
+
+
+def test_contact_page_settings_validate_and_persist(tmp_path):
+    client = make_client(tmp_path)
+    csrf = login(client)
+    saved = client.post(
+        "/studio/contact",
+        data=settings_payload(
+            csrf,
+            contact_heading="Start a\nconversation",
+            contact_accent="today.",
+            contact_email="contact@example.com",
+            instagram_url="",
+        ),
+        follow_redirects=False,
+    )
+
+    assert saved.status_code == 303
+    assert saved.headers["location"] == "/studio/contact?saved=1"
+    settings = client.get("/api/site-settings").json()
+    assert settings["contact_email"] == "contact@example.com"
+    assert settings["instagram_url"] == ""
+
+    rejected = client.post(
+        "/studio/contact",
+        data=settings_payload(csrf, instagram_url="javascript:alert(1)"),
+    )
+    assert rejected.status_code == 422
+    assert "valid HTTPS URL" in rejected.text
+    assert client.get("/api/site-settings").json()["contact_email"] == "contact@example.com"
+
+
+@pytest.mark.parametrize("path", ["/studio", "/studio/work", "/studio/about", "/studio/contact"])
+def test_studio_pages_restore_csrf_state_for_valid_opaque_session(tmp_path, path):
+    client = make_client(tmp_path)
+    login(client)
+    auth_token = client.cookies.get("huyml_studio_session")
+    assert auth_token is not None
+    client.cookies.clear()
+    client.cookies.set("huyml_studio_session", auth_token)
+
+    page = client.get(path)
+    assert page.status_code == 200
+    match = re.search(r'name="csrf_token" value="([^"]+)"', page.text)
+    assert match is not None
+    token = match.group(1)
+    assert client.post("/studio/logout", data={"csrf_token": token}, follow_redirects=False).status_code == 303
+
+
+@pytest.mark.parametrize("path", ["/studio/about", "/studio/contact"])
+def test_settings_require_auth_csrf_and_reject_logged_out_cookie_replay(tmp_path, path):
+    client = make_client(tmp_path)
+    original = client.get("/api/site-settings").json()
+    assert client.post(path, data=settings_payload("bad")).status_code == 401
+    token = login(client)
+    copied = dict(client.cookies)
+    assert client.post(path, data=settings_payload("bad")).status_code == 403
+    assert client.post("/studio/logout", data={"csrf_token": token}, follow_redirects=False).status_code == 303
+    client.cookies.update(copied)
+    assert client.post(path, data=settings_payload(token)).status_code == 401
+    assert client.get("/api/site-settings").json() == original
+
+
+@pytest.mark.parametrize("value", [
+    "https://[invalid", "https://example.com:invalid", "https://example.com:65536",
+    "https://example.com/line\nbreak", "https://example.com/has space",
+    "https://user:password@example.com", "http://example.com", "//example.com",
+    "javascript:alert(1)", "https://",
+])
+def test_contact_rejects_malformed_social_urls_without_saving(tmp_path, value):
+    client = make_client(tmp_path)
+    token = login(client)
+    before = client.get("/api/site-settings").json()
+    response = client.post("/studio/contact", data=settings_payload(token, instagram_url=value))
+    assert response.status_code == 422
+    assert "valid HTTPS URL" in response.text
+    assert client.get("/api/site-settings").json() == before
 
 
 def test_uploaded_picture_is_normalized_and_served(tmp_path):
@@ -325,7 +482,7 @@ def test_public_and_studio_previews_use_square_top_centered_framing(tmp_path):
     login(client)
     public_css = (ROOT / "styles.css").read_text(encoding="utf-8")
     studio_css = client.get("/studio-assets/studio.css").text
-    studio = client.get("/studio").text
+    studio = client.get("/studio/work").text
 
     assert "aspect-ratio: 1 / 1" in public_css
     assert "object-position: center top" in public_css

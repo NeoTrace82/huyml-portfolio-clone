@@ -11,6 +11,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -27,6 +28,7 @@ Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
 
 ROOT = Path(__file__).resolve().parent
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+EMAIL_RE = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,63}$")
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 MAX_IMAGE_EDGE = 1800
 ALLOWED_CONTENT_TYPES = {
@@ -37,6 +39,20 @@ ALLOWED_CONTENT_TYPES = {
     "image/heif",
 }
 ALLOWED_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
+SITE_SETTING_DEFAULTS = {
+    "about_heading": "Good work\nshould feel",
+    "about_accent": "alive.",
+    "about_intro": "I’m Huy, an independent art director and digital designer working between identity, interaction and the happy accidents in between.",
+    "about_details": "For the last decade I’ve helped studios, founders and curious teams turn fuzzy ideas into clear, expressive experiences.",
+    "about_email": "hello@huyml.co",
+    "contact_heading": "Let’s make\nsomething",
+    "contact_accent": "memorable.",
+    "contact_intro": "Got a project, a half-formed idea or just a good question? Drop me a line. The inbox is friendly.",
+    "contact_email": "hello@huyml.co",
+    "behance_url": "https://www.behance.net",
+    "instagram_url": "https://www.instagram.com",
+    "linkedin_url": "https://www.linkedin.com",
+}
 
 
 def square_web_image(image: Image.Image) -> Image.Image:
@@ -143,6 +159,20 @@ def create_app(
                         for index, item in enumerate(defaults, start=1)
                     ],
                 )
+            database.execute(
+                """
+                CREATE TABLE IF NOT EXISTS site_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            settings_now = datetime.now(timezone.utc).isoformat()
+            database.executemany(
+                "INSERT OR IGNORE INTO site_settings (key, value, updated_at) VALUES (?, ?, ?)",
+                [(key, value, settings_now) for key, value in SITE_SETTING_DEFAULTS.items()],
+            )
 
     def normalize_existing_uploads() -> None:
         with connection() as database:
@@ -188,6 +218,54 @@ def create_app(
         with connection() as database:
             rows = database.execute("SELECT * FROM projects ORDER BY position, id").fetchall()
         return [serialize(row) for row in rows]
+
+    def all_settings() -> dict[str, str]:
+        settings = dict(SITE_SETTING_DEFAULTS)
+        with connection() as database:
+            settings.update({row["key"]: row["value"] for row in database.execute("SELECT key, value FROM site_settings")})
+        return settings
+
+    def update_settings(values: dict[str, str]) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        with connection() as database:
+            database.executemany(
+                """
+                INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at
+                """,
+                [(key, value, now) for key, value in values.items()],
+            )
+
+    def clean_email(value: str) -> str:
+        cleaned = value.strip()
+        if len(cleaned) > 254 or not EMAIL_RE.fullmatch(cleaned):
+            raise HTTPException(status_code=422, detail="Enter a valid email address")
+        return cleaned
+
+    def clean_optional_https_url(value: str, name: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            return ""
+        try:
+            parsed = urlparse(cleaned)
+            valid = (
+                len(cleaned) <= 2048
+                and not any(character.isspace() or ord(character) < 32 or ord(character) == 127 for character in cleaned)
+                and parsed.scheme == "https"
+                and bool(parsed.hostname)
+                and parsed.port != 0
+                and parsed.username is None
+                and parsed.password is None
+            )
+        except ValueError:
+            valid = False
+        if not valid:
+            raise HTTPException(status_code=422, detail=f"Enter a valid HTTPS URL for {name}")
+        return cleaned
+
+    def studio_context(request: Request, **values) -> dict:
+        request.session.setdefault("csrf_token", secrets.token_urlsafe(32))
+        return {"request": request, "csrf_token": request.session["csrf_token"], **values}
 
     def authenticated(request: Request) -> bool:
         return auth_sessions.valid(request.cookies.get(auth_cookie))
@@ -277,6 +355,10 @@ def create_app(
     def projects_api() -> JSONResponse:
         return JSONResponse(all_projects(), headers={"Cache-Control": "no-store"})
 
+    @app.get("/api/site-settings")
+    def site_settings_api() -> JSONResponse:
+        return JSONResponse(all_settings(), headers={"Cache-Control": "no-store"})
+
     @app.get("/studio/login", response_class=HTMLResponse)
     def studio_login(request: Request):
         if authenticated(request):
@@ -316,12 +398,144 @@ def create_app(
     def studio(request: Request):
         if not authenticated(request):
             return RedirectResponse("/studio/login", status_code=303)
-        request.session.setdefault("csrf_token", secrets.token_urlsafe(32))
+        projects = all_projects()
         return templates.TemplateResponse(
             request=request,
             name="studio.html",
-            context={"request": request, "projects": all_projects(), "csrf_token": request.session["csrf_token"]},
+            context=studio_context(
+                request,
+                projects=projects,
+                project_count=len(projects),
+                first_project=projects[0] if projects else None,
+                settings=all_settings(),
+            ),
         )
+
+    @app.get("/studio/work", response_class=HTMLResponse)
+    def studio_work(request: Request):
+        if not authenticated(request):
+            return RedirectResponse("/studio/login", status_code=303)
+        return templates.TemplateResponse(
+            request=request,
+            name="work.html",
+            context=studio_context(request, projects=all_projects()),
+        )
+
+    @app.get("/studio/about", response_class=HTMLResponse)
+    def studio_about(request: Request):
+        if not authenticated(request):
+            return RedirectResponse("/studio/login", status_code=303)
+        return templates.TemplateResponse(
+            request=request,
+            name="about.html",
+            context=studio_context(
+                request,
+                settings=all_settings(),
+                saved=request.query_params.get("saved") == "1",
+                error=None,
+            ),
+        )
+
+    @app.post("/studio/about", response_class=HTMLResponse)
+    def studio_about_submit(
+        request: Request,
+        about_heading: str = Form(),
+        about_accent: str = Form(),
+        about_intro: str = Form(),
+        about_details: str = Form(),
+        about_email: str = Form(),
+        csrf_token: str = Form(),
+    ):
+        require_auth(request)
+        require_csrf(request, csrf_token)
+        submitted = all_settings()
+        submitted.update(
+            {
+                "about_heading": about_heading,
+                "about_accent": about_accent,
+                "about_intro": about_intro,
+                "about_details": about_details,
+                "about_email": about_email,
+            }
+        )
+        try:
+            values = {
+                "about_heading": clean_text(about_heading, "Heading", 120),
+                "about_accent": clean_text(about_accent, "Highlighted line", 60),
+                "about_intro": clean_text(about_intro, "Introduction", 800),
+                "about_details": clean_text(about_details, "Biography", 1200),
+                "about_email": clean_email(about_email),
+            }
+        except HTTPException as error:
+            return templates.TemplateResponse(
+                request=request,
+                name="about.html",
+                context=studio_context(request, settings=submitted, saved=False, error=error.detail),
+                status_code=error.status_code,
+            )
+        update_settings(values)
+        return RedirectResponse("/studio/about?saved=1", status_code=303)
+
+    @app.get("/studio/contact", response_class=HTMLResponse)
+    def studio_contact(request: Request):
+        if not authenticated(request):
+            return RedirectResponse("/studio/login", status_code=303)
+        return templates.TemplateResponse(
+            request=request,
+            name="contact.html",
+            context=studio_context(
+                request,
+                settings=all_settings(),
+                saved=request.query_params.get("saved") == "1",
+                error=None,
+            ),
+        )
+
+    @app.post("/studio/contact", response_class=HTMLResponse)
+    def studio_contact_submit(
+        request: Request,
+        contact_heading: str = Form(),
+        contact_accent: str = Form(),
+        contact_intro: str = Form(),
+        contact_email: str = Form(),
+        behance_url: str = Form(default=""),
+        instagram_url: str = Form(default=""),
+        linkedin_url: str = Form(default=""),
+        csrf_token: str = Form(),
+    ):
+        require_auth(request)
+        require_csrf(request, csrf_token)
+        submitted = all_settings()
+        submitted.update(
+            {
+                "contact_heading": contact_heading,
+                "contact_accent": contact_accent,
+                "contact_intro": contact_intro,
+                "contact_email": contact_email,
+                "behance_url": behance_url,
+                "instagram_url": instagram_url,
+                "linkedin_url": linkedin_url,
+            }
+        )
+        try:
+            values = {
+                "contact_heading": clean_text(contact_heading, "Heading", 120),
+                "contact_accent": clean_text(contact_accent, "Highlighted line", 60),
+                "contact_intro": clean_text(contact_intro, "Introduction", 800),
+                "contact_email": clean_email(contact_email),
+                "behance_url": clean_optional_https_url(behance_url, "Behance"),
+                "instagram_url": clean_optional_https_url(instagram_url, "Instagram"),
+                "linkedin_url": clean_optional_https_url(linkedin_url, "LinkedIn"),
+            }
+        except HTTPException as error:
+            return templates.TemplateResponse(
+                request=request,
+                name="contact.html",
+                context=studio_context(request, settings=submitted, saved=False, error=error.detail),
+                status_code=error.status_code,
+            )
+        update_settings(values)
+        return RedirectResponse("/studio/contact?saved=1", status_code=303)
 
     @app.post("/studio/logout")
     def studio_logout(request: Request, csrf_token: str = Form()):

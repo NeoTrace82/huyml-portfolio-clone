@@ -1,0 +1,27 @@
+{% extends "studio_base.html" %}
+{% block title %}About — HUYML Studio{% endblock %}
+{% block kicker %}HUYML Studio / About{% endblock %}
+{% block heading %}Edit your story.{% endblock %}
+{% block body_class %}studio-settings-page{% endblock %}
+{% block content %}
+  <p class="studio-intro">Shape the About panel visitors see on the portfolio. Line breaks are preserved and all text is rendered safely.</p>
+  <section class="settings-layout">
+    <div class="settings-preview settings-preview--about" aria-label="Current About preview">
+      <span class="preview-kicker">About / Preview</span>
+      <h2><span>{{ settings.about_heading }}</span><em>{{ settings.about_accent }}</em></h2>
+      <div class="settings-preview-copy"><p>{{ settings.about_intro }}</p><p>{{ settings.about_details }}</p></div>
+      <span class="preview-link">{{ settings.about_email }} ↗</span>
+    </div>
+    <form class="settings-form" method="post" action="/studio/about" aria-label="Edit About page">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      {% if saved %}<p class="form-notice is-success" role="status">About page saved. The public portfolio is updated.</p>{% endif %}
+      {% if error %}<p class="form-notice is-error" role="alert">{{ error }}</p>{% endif %}
+      <label><span>Main heading</span><textarea name="about_heading" maxlength="120" rows="2" required>{{ settings.about_heading }}</textarea><small>Use a line break where the heading should wrap.</small></label>
+      <label><span>Highlighted line</span><input name="about_accent" value="{{ settings.about_accent }}" maxlength="60" required /></label>
+      <label><span>Introduction</span><textarea name="about_intro" maxlength="800" rows="5" required>{{ settings.about_intro }}</textarea></label>
+      <label><span>Biography</span><textarea name="about_details" maxlength="1200" rows="6" required>{{ settings.about_details }}</textarea></label>
+      <label><span>About email</span><input name="about_email" type="email" value="{{ settings.about_email }}" maxlength="254" required /></label>
+      <button class="settings-save" type="submit">Save About page <span>↗</span></button>
+    </form>
+  </section>
+{% endblock %}

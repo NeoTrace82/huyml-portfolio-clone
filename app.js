@@ -19,6 +19,33 @@ async function loadProjects() {
   throw new Error('Selected work could not be loaded.');
 }
 
+async function loadSiteSettings() {
+  const response = await fetch('/api/site-settings', { credentials: 'same-origin', cache: 'no-store' });
+  if (!response.ok) throw new Error('Site settings could not be loaded.');
+  const settings = await response.json();
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new Error('Site settings are invalid.');
+  return settings;
+}
+
+function applySiteSettings(settings) {
+  $$('[data-site-setting]').forEach((element) => {
+    const value = settings[element.dataset.siteSetting];
+    if (typeof value === 'string') element.textContent = value;
+  });
+  $$('[data-site-email]').forEach((link) => {
+    const email = settings[link.dataset.siteEmail];
+    if (typeof email !== 'string' || !email) return;
+    link.textContent = `${email} ↗`;
+    link.href = `mailto:${email}`;
+  });
+  $$('[data-site-url]').forEach((link) => {
+    const value = settings[link.dataset.siteUrl];
+    link.hidden = typeof value !== 'string' || !value;
+    if (link.hidden) link.removeAttribute('href');
+    else link.href = value;
+  });
+}
+
 function safeColor(value, fallback) {
   return COLOR_PATTERN.test(String(value || '')) ? value : fallback;
 }
@@ -145,6 +172,12 @@ async function init() {
     renderProjects();
   } catch (error) {
     $('.project-list').append(createElement('p', 'project-load-error', error.message));
+  }
+
+  try {
+    applySiteSettings(await loadSiteSettings());
+  } catch (_) {
+    // Static previews retain the safe copy embedded in the document.
   }
 
   $('.visual__next').addEventListener('click', () => selectProject(activeIndex + 1));

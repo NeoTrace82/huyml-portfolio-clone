@@ -112,6 +112,7 @@ h1 em, h2 em { font-style: italic; color: var(--coral); }
 .panel__inner { min-height: 100%; padding: 25px 22px 70px; display: flex; flex-direction: column; }
 .panel__inner .eyebrow { color: rgba(17,17,17,.6); }
 .panel h2 { margin-top: auto; font: 400 clamp(57px, 8vw, 110px)/.84 var(--serif); }
+.panel__heading, .panel h2 em { display: block; white-space: pre-line; }
 .panel p { max-width: 330px; margin: 26px 0 0; font-size: 14px; line-height: 1.45; }
 .panel__link { display: inline-block; margin-top: 35px; font: 500 11px var(--mono); text-transform: uppercase; border-bottom: 1px solid var(--ink); padding-bottom: 8px; align-self: flex-start; }
 .socials { display: flex; flex-wrap: wrap; gap: 13px 26px; margin-top: auto; padding-top: 70px; font: 10px var(--mono); text-transform: uppercase; }

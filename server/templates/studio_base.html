@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>{% block title %}HUYML Studio{% endblock %}</title>
+  <link rel="stylesheet" href="/studio-assets/studio.css?v=4" />
+</head>
+<body class="studio-page {% block body_class %}{% endblock %}">
+  <header class="studio-header">
+    <div>
+      <span class="studio-kicker">{% block kicker %}HUYML Studio{% endblock %}</span>
+      <h1>{% block heading %}Choose what to edit.{% endblock %}</h1>
+    </div>
+    <div class="header-actions">
+      {% if request.url.path != '/studio' %}<a href="/studio">← Studio home</a>{% endif %}
+      <a href="/" target="_blank" rel="noopener">Open portfolio ↗</a>
+      <form method="post" action="/studio/logout" aria-label="Studio session">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <button type="submit">Log out</button>
+      </form>
+    </div>
+  </header>
+  <main class="studio-main">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
